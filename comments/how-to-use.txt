@@ -1,0 +1,7 @@
+## Usage
+
+- **Add comment:**  
+  `POST /api/comments/12345`  
+  Body: `{ "name": "Alice", "comment": "Nice post!" }`
+- **Get comments:**  
+  `GET /api/comments/12345`
