@@ -1,0 +1,4 @@
+[
+  { "name": "Alice", "comment": "Nice post!" },
+  { "name": "Bob", "comment": "Thanks for sharing." }
+]
