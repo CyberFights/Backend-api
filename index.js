@@ -5,6 +5,10 @@ const app = express();
 
 app.use(express.json()); // Middleware to parse JSON bodies
 
+app.get('/', (req, res) => {
+  res.send('Tournament API is running!');
+});
+
 const COMMENTS_DIR = path.join(__dirname, 'comments');
 const DATA_DIR = path.join(__dirname, 'tournaments');
 
