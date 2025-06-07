@@ -1,0 +1,34 @@
+
+# **How to Use**
+
+- **Create a tournament:**  
+  `POST /tournament`  
+  Body: `{ "name": "My Cup", "description": "...", ... }`
+
+- **List tournaments:**  
+  `GET /tournaments`
+
+- **Register participant:**  
+  `POST /signup?tournament=My_Cup`  
+  Body: `{ "name": "Alice", "email": "...", ... }`
+
+- **Generate bracket:**  
+  `POST /generate?tournament=My_Cup`
+
+- **Submit match result:**  
+  `POST /result?tournament=My_Cup`  
+  Body: `{ "matchIndex": 0, "winner": "Alice", "scores": , "notes": "Great match!" }`
+
+- **Add match chat:**  
+  `POST /match/chat?tournament=My_Cup&matchIndex=0&round=1`  
+  Body: `{ "user": "Alice", "message": "Good luck!" }`
+
+- **Get standings:**  
+  `GET /standings?tournament=My_Cup`
+
+- **Export tournament:**  
+  `GET /export?tournament=My_Cup`
+
+- **Import tournament:**  
+  `POST /import`  
+  Body: `{ "name": "Imported_Cup", "data": { ... } }`
