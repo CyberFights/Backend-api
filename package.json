@@ -10,7 +10,8 @@
     "express",
     "tournament",
     "api",
-    "comments"
+    "comments",
+    "multer"
   ],
   "author": "",
   "license": "MIT",
