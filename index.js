@@ -1,22 +1,25 @@
+
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const multer = require('multer');
+const bcrypt = require('bcrypt');
 const app = express();
 
-app.use(express.json()); // Middleware to parse JSON bodies
+app.use(express.json());
 
-app.get('/', (req, res) => {
-  res.send('Tournament API is running!');
-});
-
+// --- Directories ---
 const COMMENTS_DIR = path.join(__dirname, 'comments');
 const DATA_DIR = path.join(__dirname, 'tournaments');
+const USERS_DIR = path.join(__dirname, 'users');
+const IMAGES_DIR = path.join(__dirname, 'images');
 
-// Ensure the comments and tournaments directories exist
-if (!fs.existsSync(COMMENTS_DIR)) fs.mkdirSync(COMMENTS_DIR);
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
+// Ensure directories exist
+[COMMENTS_DIR, DATA_DIR, USERS_DIR, IMAGES_DIR].forEach(dir => {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+});
 
-// --- Helper Functions ---
+// --- Helper Functions (Tournament) ---
 function sanitizeName(name) {
   return name.trim().replace(/[^a-zA-Z0-9-_]/g, '_');
 }
@@ -45,7 +48,69 @@ function deleteData(tournamentName) {
   if (fs.existsSync(file)) fs.unlinkSync(file);
 }
 
-// --- Comments API ---
+// --- Multer for User Image Uploads ---
+const upload = multer({ dest: IMAGES_DIR });
+
+// --- User Registration ---
+app.post('/register', upload.single('image'), async (req, res) => {
+  const { username, password, stats, info, email, age, nativeLanguage, colorPreference } = req.body;
+  if (!username || !password) return res.status(400).send('Username and password required');
+  const userPath = path.join(USERS_DIR, `${sanitizeName(username)}.json`);
+  if (fs.existsSync(userPath)) return res.status(409).send('Username already exists');
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const userData = { username, password: hashedPassword, stats, info, email, age, nativeLanguage, colorPreference };
+  fs.writeFileSync(userPath, JSON.stringify(userData, null, 2));
+  // Save image if uploaded
+  if (req.file) {
+    const ext = path.extname(req.file.originalname) || '.jpg';
+    fs.renameSync(req.file.path, path.join(IMAGES_DIR, `${sanitizeName(username)}${ext}`));
+  }
+  res.send('Registered');
+});
+
+// --- User Login ---
+app.get('/login', async (req, res) => {
+  const { username, password } = req.query;
+  const userPath = path.join(USERS_DIR, `${sanitizeName(username)}.json`);
+  if (!fs.existsSync(userPath)) return res.status(404).send('User not found');
+  const user = JSON.parse(fs.readFileSync(userPath));
+  const match = await bcrypt.compare(password, user.password);
+  res.send(match ? 'ok' : 'invalid');
+});
+
+// --- Update User Info ---
+app.post('/update', async (req, res) => {
+  const { username, password, ...updates } = req.body;
+  const userPath = path.join(USERS_DIR, `${sanitizeName(username)}.json`);
+  if (!fs.existsSync(userPath)) return res.status(404).send('User not found');
+  const user = JSON.parse(fs.readFileSync(userPath));
+  const match = await bcrypt.compare(password, user.password);
+  if (!match) return res.status(401).send('Unauthorized');
+  Object.assign(user, updates);
+  fs.writeFileSync(userPath, JSON.stringify(user, null, 2));
+  res.send('Updated');
+});
+
+// --- Get All User Info (POST) ---
+app.post('/userinfo', async (req, res) => {
+  const { username, password } = req.body;
+  const userPath = path.join(USERS_DIR, `${sanitizeName(username)}.json`);
+  if (!fs.existsSync(userPath)) return res.status(404).send('User not found');
+  const user = JSON.parse(fs.readFileSync(userPath));
+  const match = await bcrypt.compare(password, user.password);
+  if (!match) return res.status(401).send('Unauthorized');
+  // Exclude password from response
+  const { password: _, ...userWithoutPassword } = user;
+  res.json(userWithoutPassword);
+});
+
+// --- Tournament & Comments API ---
+
+app.get('/', (req, res) => {
+  res.send('Tournament API is running!');
+});
+
+// Comments API
 app.post('/api/comments/:messageID', (req, res) => {
   const file = path.join(COMMENTS_DIR, `${req.params.messageID}.txt`);
   const { name, comment } = req.body;
@@ -86,7 +151,7 @@ app.get('/api/comments/:messageID', (req, res) => {
   }
 });
 
-// --- Tournament CRUD ---
+// Tournament CRUD
 app.post('/tournament', (req, res) => {
   const { name, description, themeColor, streamUrl, sponsor, customFields } = req.body;
   if (!name || !name.trim()) return res.status(400).send('Tournament name required');
@@ -155,7 +220,7 @@ app.post('/tournament/delete', (req, res) => {
   res.send({ deleted: name });
 });
 
-// --- Participant Management ---
+// Participant Management
 app.post('/signup', (req, res) => {
   const { tournament } = req.query;
   if (!tournament) return res.status(400).send('Tournament name required');
@@ -179,7 +244,7 @@ app.get('/participants', (req, res) => {
   res.send({ participants: data.participants });
 });
 
-// --- Bracket Generation ---
+// Bracket Generation
 app.post('/generate', (req, res) => {
   const { tournament, seeding } = req.query;
   if (!tournament) return res.status(400).send('Tournament name required');
@@ -216,7 +281,7 @@ app.post('/generate', (req, res) => {
   res.send({ round: data.roundNumber, matches: data.bracket });
 });
 
-// --- Get Bracket and Matches ---
+// Get Bracket and Matches
 app.get('/bracket', (req, res) => {
   const { tournament } = req.query;
   if (!tournament) return res.status(400).send('Tournament name required');
@@ -239,7 +304,7 @@ app.get('/matches', (req, res) => {
   res.send({ matches });
 });
 
-// --- Update Match Result (Best-of-N, Chat, Notes) ---
+// Update Match Result (Best-of-N, Chat, Notes)
 app.post('/result', (req, res) => {
   const { tournament } = req.query;
   if (!tournament) return res.status(400).send('Tournament name required');
@@ -284,7 +349,7 @@ app.post('/result', (req, res) => {
   res.send({ match });
 });
 
-// --- Match Chat/Notes ---
+// Match Chat/Notes
 app.post('/match/chat', (req, res) => {
   const { tournament, matchIndex, round } = req.query;
   if (!tournament) return res.status(400).send('Tournament name required');
@@ -299,7 +364,7 @@ app.post('/match/chat', (req, res) => {
   res.send({ chat: match.chat });
 });
 
-// --- Standings ---
+// Standings
 app.get('/standings', (req, res) => {
   const { tournament } = req.query;
   if (!tournament) return res.status(400).send('Tournament name required');
@@ -308,7 +373,7 @@ app.get('/standings', (req, res) => {
   res.send({ standings: data.standings || [] });
 });
 
-// --- Export/Import ---
+// Export/Import
 app.get('/export', (req, res) => {
   const { tournament } = req.query;
   if (!tournament) return res.status(400).send('Tournament name required');
@@ -326,7 +391,7 @@ app.post('/import', (req, res) => {
   res.send({ imported: name });
 });
 
-// --- Pagination for Participants ---
+// Pagination for Participants
 app.get('/participants/paged', (req, res) => {
   const { tournament, page = 1, perPage = 10 } = req.query;
   if (!tournament) return res.status(400).send('Tournament name required');
@@ -345,4 +410,3 @@ app.get('/participants/paged', (req, res) => {
 // --- Start Server ---
 const PORT = 3000;
 app.listen(PORT, () => console.log(`API running on port ${PORT}`));
-
