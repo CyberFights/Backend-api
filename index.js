@@ -65,7 +65,7 @@ app.post('/register', upload.single('image'), async (req, res) => {
     const ext = path.extname(req.file.originalname) || '.jpg';
     fs.renameSync(req.file.path, path.join(IMAGES_DIR, `${sanitizeName(username)}${ext}`));
   }
-  res.send('Registered');
+  res.send('ok');
 });
 
 // --- User Login ---
