@@ -3,8 +3,10 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const bcrypt = require('bcrypt');
+const cors = require('cors');        // <-- Add this line
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
