@@ -469,7 +469,7 @@ app.get('/guilds/:guildId/roles/:roleId/members', async (req, res) => {
       const url = "https://discord.com/api/v10/guilds/${guildId}/members?limit=1000&after=0";
       const response = await axios.get(url, {
         headers: {
-          Authorization: ${botToken}
+          Authorization: process.env.BotToken
         }
       });
 
