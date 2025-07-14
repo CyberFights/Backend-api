@@ -477,16 +477,16 @@ app.get('/guilds/:guildId/roles/:roleId/members', async (req, res) => {
       if (members.length === 0) {
         hasMore = false;
       } else {
-        userIds.push(
+        usernames.push(
           ...members
             .filter(member => member.roles.includes(roleId))
-            .map(member => member.user.id)
+            .map(member => member.user.username)
         );
         after = members[members.length - 1].user.id;
         hasMore = members.length === 1000;
       }
     }
-    res.json({ userIds });
+    res.json({ usernames });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
