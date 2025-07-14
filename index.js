@@ -461,7 +461,7 @@ app.get('/guilds/:guildId/roles/:roleId/members', async (req, res) => {
   const { guildId, roleId } = req.params;
   const botToken = process.env.BotToken;
   let after = null;
-  let userIds = [];
+  let usernames = [];
   let hasMore = true;
 
   try {
