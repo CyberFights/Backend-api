@@ -466,7 +466,7 @@ app.get('/guilds/:guildId/roles/:roleId/members', async (req, res) => {
 
   try {
     while (hasMore) {
-      const url = "https://discord.com/api/v10/guilds/${guildId}/members?limit=1000&after=0";
+      const url = `https://discord.com/api/v10/guilds/${guildId}/members?limit=1000&after=0`;
       const response = await axios.get(url, {
         headers: {
           Authorization: process.env.BotToken
