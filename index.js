@@ -1,4 +1,5 @@
 const express = require('express');
+const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
@@ -456,6 +457,40 @@ app.get('/participants/paged', (req, res) => {
   });
 });
 
+app.get('/guilds/:guildId/roles/:roleId/members', async (req, res) => {
+  const { guildId, roleId } = req.params;
+  const botToken = process.env.BotToken;
+  let after = null;
+  let userIds = [];
+  let hasMore = true;
+
+  try {
+    while (hasMore) {
+      const url = https://discord.com/api/v10/guilds/${guildId}/members?limit=1000${after ? &after=${after} : ''};
+      const response = await axios.get(url, {
+        headers: {
+          Authorization: ${botToken}
+        }
+      });
+
+      const members = response.data;
+      if (members.length === 0) {
+        hasMore = false;
+      } else {
+        userIds.push(
+          ...members
+            .filter(member => member.roles.includes(roleId))
+            .map(member => member.user.id)
+        );
+        after = members[members.length - 1].user.id;
+        hasMore = members.length === 1000;
+      }
+    }
+    res.json({ userIds });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 // --- Start Server ---
 const PORT = 3000;
 app.listen(PORT, () => console.log(`API running on port ${PORT}`));
