@@ -491,6 +491,46 @@ app.get('/guilds/:guildId/roles/:roleId/members', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+app.get('/guilds/:guildId/members-with-roles', async (req, res) => {
+  const { guildId } = req.params;
+  const { role1, role2 } = req.query;
+  const botToken = process.env.BotToken;
+  let after = null;
+  let usernames = [];
+  let hasMore = true;
+
+  if (!role1 || !role2) {
+    return res.status(400).json({ error: 'Both role1 and role2 query parameters are required.' });
+  }
+
+  try {
+    while (hasMore) {
+      const url = `https://discord.com/api/v10/guilds/${guildId}/members?limit=1000&after=0`;
+      const response = await axios.get(url, {
+        headers: {
+          Authorization: process.env.BotToken
+        }
+      });
+
+      const members = response.data;
+      if (members.length === 0) {
+        hasMore = false;
+      } else {
+        usernames.push(
+          ...members
+            .filter(member => member.roles.includes(role1) && member.roles.includes(role2))
+            .map(member => member.user.username)
+        );
+        after = members[members.length - 1].user.id;
+        hasMore = members.length === 1000;
+      }
+    }
+    res.json({ usernames });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 // --- Start Server ---
 const PORT = 3000;
 app.listen(PORT, () => console.log(`API running on port ${PORT}`));
