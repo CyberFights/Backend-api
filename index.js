@@ -6,7 +6,7 @@ const multer = require('multer');
 const bcrypt = require('bcrypt');
 const cors = require('cors');        // <-- Add this line
 const app = express();
-const FormData = require('form-data')';
+const FormData = require('form-data');
 
 app.use(cors());
 app.use(express.json());
