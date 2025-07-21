@@ -6,6 +6,7 @@ const multer = require('multer');
 const bcrypt = require('bcrypt');
 const cors = require('cors');        // <-- Add this line
 const app = express();
+const FormData = require('form-data')';
 
 app.use(cors());
 app.use(express.json());
@@ -536,36 +537,37 @@ const REMOVE_BG_API_KEY = process.env.rbkey;
 
 app.get('/remove-bg', async (req, res) => {
   const { imageUrl } = req.query;
+  const url = 'https://api.remove.bg/v1.0/removebg';
 
   if (!imageUrl) {
     return res.status(400).json({ error: 'Missing imageUrl query parameter.' });
   }
 
   try {
-    const response = await axios({
-      method: 'post',
-      url: 'https://api.remove.bg/v1.0/removebg',
-       {
-        image_url: imageUrl,
-        size: 'auto',
-      },
+    const formData = new FormData();
+    formData.append('image_url', imageUrl);
+    formData.append('size', 'auto'); // Optional: set image size
+
+    const response = await axios.post(url, formData, {
       responseType: 'arraybuffer',
       headers: {
+        ...formData.getHeaders(),
         'X-Api-Key': REMOVE_BG_API_KEY,
       },
     });
 
-    // Set the response headers so the client knows it is an image
-    res.set('Content-Type', 'image/png');
+    // Encode image to base64
     const base64Image = Buffer.from(response.data, 'binary').toString('base64');
     const imageURL = `image/png;base64,${base64Image}`;
+
+    // Send basic HTML with the result
     res.send(`
-    <html>
-      <body>
-      <img src={imageURL}/>
-      </body>
+      <html>
+        <body>
+          <img src="${imageURL}" />
+        </body>
       </html>
-      `);
+    `);
   } catch (error) {
     res.status(500).json({ error: error.response?.data || error.message });
   }
