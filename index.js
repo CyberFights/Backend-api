@@ -545,7 +545,7 @@ app.get('/remove-bg', async (req, res) => {
 
   try {
     const formData = new FormData();
-    formData.append('image_url', imageUrl);
+    formData.append('image_url', `${imageUrl}`);
     formData.append('size', 'auto'); // Optional: set image size
 
     const response = await axios.post(url, formData, {
