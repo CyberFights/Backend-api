@@ -569,8 +569,23 @@ app.get('/remove-bg', async (req, res) => {
       </html>
     `);
   } catch (error) {
-    res.status(500).json({ error: error.response?.data || error.message });
+  let errorData;
+  if (error.response && error.response.data) {
+    // Try to convert buffer to string for error messages
+    if (Buffer.isBuffer(error.response.data)) {
+      errorData = error.response.data.toString();
+      // Optionally, attempt parsing as JSON
+      try {
+        errorData = JSON.parse(errorData);
+      } catch(e) {} // ignore JSON parse errors
+    } else {
+      errorData = error.response.data;
+    }
+  } else {
+    errorData = error.message;
   }
+  res.status(500).json({ error: errorData });
+}
 });
 
 // --- Start Server ---
